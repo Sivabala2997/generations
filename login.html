@@ -1,0 +1,124 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Sign In | Generations</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,600;1,400&family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="style.css" />
+  <link rel="stylesheet" href="auth.css" />
+  <script src="family-accounts.js"></script>
+</head>
+<body class="auth-page">
+
+  <div class="auth-shell">
+
+    <!-- Left panel -->
+    <div class="auth-panel auth-panel--left">
+      <a href="login.html" class="auth-logo">
+        <svg class="logo-leaf" viewBox="0 0 24 24" fill="none">
+          <path d="M12 2C6 2 2 8 2 14c0 4.4 3.6 8 8 8 1.4 0 2.8-.4 4-1 1.2.6 2.6 1 4 1 4.4 0 8-3.6 8-8 0-6-4-12-10-12z" fill="currentColor" opacity="0.25"/>
+          <path d="M12 2c0 0-2 6-2 10s2 10 2 10M12 2c0 0 2 6 2 10s-2 10-2 10" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+        </svg>
+        Generations
+      </a>
+      <div class="auth-panel__quote">
+        <blockquote>"Some stories are too good to lose."</blockquote>
+        <p class="auth-panel__sub">Keep your family’s recipes, memories, and traditions together.</p>
+      </div>
+    </div>
+
+    <!-- Right panel / form -->
+    <div class="auth-panel auth-panel--right">
+      <div class="auth-card">
+        <div class="auth-card__header">
+          <h1>Welcome back</h1>
+          <p>Sign in to see your family’s stories.</p>
+        </div>
+
+        <form id="loginForm" class="auth-form" novalidate>
+          <div class="form-group">
+            <label for="loginEmail">Email address</label>
+            <input type="email" id="loginEmail" placeholder="you@example.com" autocomplete="email" />
+            <span class="field-error" id="emailError"></span>
+          </div>
+          <div class="form-group">
+            <label for="loginPassword">
+              Password
+              <button type="button" class="toggle-pw" id="togglePw" tabindex="-1">Show</button>
+            </label>
+            <input type="password" id="loginPassword" placeholder="••••••••" autocomplete="current-password" />
+            <span class="field-error" id="passwordError"></span>
+          </div>
+
+          <div class="auth-error" id="authError" style="display:none">
+            Incorrect email or password. Please try again.
+          </div>
+
+          <button type="submit" class="btn-primary btn-full">Sign In</button>
+        </form>
+
+        <p class="auth-switch">
+          Don't have an account? <a href="signup.html">Create one</a>
+        </p>
+      </div>
+    </div>
+
+  </div>
+
+  <script>
+    // Redirect if already logged in
+    if (sessionStorage.getItem('gen_authed') === 'true') {
+      window.location.href = 'index.html';
+    }
+
+    const familyAccounts = window.GENERATIONS_FAMILY_ACCOUNTS || [];
+
+    const form          = document.getElementById('loginForm');
+    const emailInput    = document.getElementById('loginEmail');
+    const passwordInput = document.getElementById('loginPassword');
+    const emailError    = document.getElementById('emailError');
+    const passwordError = document.getElementById('passwordError');
+    const authError     = document.getElementById('authError');
+    const togglePwBtn   = document.getElementById('togglePw');
+
+    // Show / hide password
+    togglePwBtn.addEventListener('click', () => {
+      const isText = passwordInput.type === 'text';
+      passwordInput.type = isText ? 'password' : 'text';
+      togglePwBtn.textContent = isText ? 'Show' : 'Hide';
+    });
+
+    form.addEventListener('submit', (e) => {
+      e.preventDefault();
+      emailError.textContent    = '';
+      passwordError.textContent = '';
+      authError.style.display   = 'none';
+
+      const email    = emailInput.value.trim();
+      const password = passwordInput.value;
+      let valid = true;
+
+      if (!email)    { emailError.textContent    = 'Please enter your email.';    valid = false; }
+      if (!password) { passwordError.textContent = 'Please enter your password.'; valid = false; }
+      if (!valid) return;
+
+      const account = familyAccounts.find(item => item.email === email.toLowerCase() && item.password === password);
+      if (account) {
+        sessionStorage.setItem('gen_authed', 'true');
+        sessionStorage.setItem('gen_user_email', account.email);
+        sessionStorage.setItem('gen_user_name', account.displayName);
+        sessionStorage.setItem('gen_user_role', account.role);
+        sessionStorage.setItem('gen_family_id', account.familyId);
+        window.location.href = 'index.html';
+      } else {
+        authError.style.display = 'block';
+        passwordInput.value = '';
+        passwordInput.focus();
+      }
+    });
+  </script>
+</body>
+</html>

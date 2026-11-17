@@ -1,0 +1,258 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Generations | Family stories, kept together</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,600;1,400&family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="style.css" />
+  <script src="family-accounts.js"></script>
+</head>
+<body>
+
+  <!-- NAV -->
+  <header class="site-header">
+    <div class="container header-inner">
+      <div class="logo">
+        <svg class="logo-leaf" viewBox="0 0 24 24" fill="none">
+          <path d="M12 2C6 2 2 8 2 14c0 4.4 3.6 8 8 8 1.4 0 2.8-.4 4-1 1.2.6 2.6 1 4 1 4.4 0 8-3.6 8-8 0-6-4-12-10-12z" fill="currentColor" opacity="0.2"/>
+          <path d="M12 2c0 0-2 6-2 10s2 10 2 10M12 2c0 0 2 6 2 10s-2 10-2 10" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+        </svg>
+        Generations
+      </div>
+      <nav class="main-nav" id="mainNav">
+        <a href="#" class="nav-link active" data-view="browse">Browse</a>
+        <a href="#" class="nav-link" data-view="favorites">Favorites</a>
+        <a href="#" class="nav-link nav-add" data-view="add">+ Add Story</a>
+        <span class="nav-divider"></span>
+        <!-- Text size toggle -->
+        <div class="text-size-ctrl" title="Adjust text size">
+          <button class="ts-btn" id="tsDecrease" aria-label="Decrease text size">A−</button>
+          <button class="ts-btn ts-btn--large" id="tsIncrease" aria-label="Increase text size">A+</button>
+        </div>
+        <span class="nav-divider"></span>
+       <!-- <button type="button" class="nav-link nav-family" id="familyAccessBtn" aria-haspopup="dialog" aria-controls="familyAccessDialog">🔒 Family access</button> -->
+        <button class="nav-link nav-signout" id="signOutBtn">Sign out</button>
+      </nav>
+      <button class="hamburger" id="hamburger" aria-label="Toggle menu">
+        <span></span><span></span><span></span>
+      </button>
+    </div>
+  </header>
+
+  <!-- HERO -->
+  <section class="hero" id="heroSection">
+    <div class="container">
+
+      <!-- Story of the Day banner -->
+      <div class="sotd-banner" id="sotdBanner" style="display:none">
+        <div class="sotd-label">
+          <svg viewBox="0 0 20 20" fill="none"><path d="M10 2l1.8 5.4H17l-4.6 3.3 1.8 5.4L10 13l-4.2 3.1 1.8-5.4L3 7.4h5.2L10 2z" fill="currentColor"/></svg>
+          Story of the Day
+        </div>
+        <div class="sotd-content">
+          <span class="sotd-category" id="sotdCat"></span>
+          <span class="privacy-badge sotd-privacy" id="sotdPrivacy" hidden>🔒 Family only</span>
+          <h3 class="sotd-title" id="sotdTitle"></h3>
+          <p class="sotd-excerpt" id="sotdExcerpt"></p>
+          <button class="sotd-read-btn" id="sotdReadBtn">Read this story →</button>
+        </div>
+      </div>
+
+      <div class="hero-inner">
+        <h1>A place for your <em>family traditions.</em></h1>
+        <p>Save the recipes, memories, and traditions you want your family to remember.</p>
+        <div class="search-bar">
+          <svg viewBox="0 0 20 20" fill="none"><circle cx="8.5" cy="8.5" r="5.5" stroke="currentColor" stroke-width="1.5"/><path d="M13 13l3.5 3.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>
+          <input type="text" id="searchInput" placeholder="Search stories, recipes, lessons…" autocomplete="off" />
+          <button id="clearSearch" class="clear-btn" aria-label="Clear search">✕</button>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- MAIN CONTENT -->
+  <main class="main-content container">
+
+    <!-- BROWSE VIEW -->
+    <div id="browseView" class="view active">
+      <div class="filter-bar">
+        <span class="filter-label">Filter by:</span>
+        <div class="filter-chips" id="filterChips">
+          <button class="chip active" data-cat="all">All</button>
+          <button class="chip" data-cat="memory">Memory</button>
+          <button class="chip" data-cat="recipe">Recipe</button>
+          <button class="chip" data-cat="tradition">Tradition</button>
+          <button class="chip" data-cat="lesson">Life Lesson</button>
+        </div>
+      </div>
+      <div class="results-info" id="resultsInfo"></div>
+      <div class="story-grid" id="storyGrid"></div>
+      <div class="empty-state" id="emptyState" style="display:none">
+        <div class="empty-icon">🌿</div>
+        <h3>No stories found</h3>
+        <p>Try a different search or filter, or <a href="#" data-view="add">add the first one</a>.</p>
+      </div>
+    </div>
+
+    <!-- STORY DETAIL VIEW -->
+    <div id="storyView" class="view">
+      <div class="story-view-toolbar">
+        <button class="back-btn" id="backBtn">← Back to stories</button>
+        <div class="story-actions">
+          <!-- Read Aloud -->
+          <button class="action-btn" id="readAloudBtn" title="Read this story aloud">
+            <svg viewBox="0 0 24 24" fill="none"><path d="M11 5L6 9H2v6h4l5 4V5z" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/><path d="M15.5 8.5a5 5 0 0 1 0 7M19 6a9 9 0 0 1 0 12" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>
+            <span id="readAloudLabel">Read Aloud</span>
+          </button>
+          <!-- Print -->
+          <button class="action-btn" id="printBtn" title="Print this story">
+            <svg viewBox="0 0 24 24" fill="none"><rect x="6" y="2" width="12" height="8" rx="1" stroke="currentColor" stroke-width="1.5"/><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2" stroke="currentColor" stroke-width="1.5"/><rect x="6" y="14" width="12" height="8" rx="1" stroke="currentColor" stroke-width="1.5"/></svg>
+            Print
+          </button>
+        </div>
+      </div>
+      <article class="story-detail" id="storyDetail"></article>
+    </div>
+
+    <!-- FAVORITES VIEW -->
+    <div id="favoritesView" class="view">
+      <div class="view-header">
+        <h2>Your Favorites</h2>
+        <p>Stories you've saved to revisit.</p>
+      </div>
+      <div class="story-grid" id="favGrid"></div>
+      <div class="empty-state" id="favEmpty" style="display:none">
+        <div class="empty-icon">🤍</div>
+        <h3>Nothing saved yet</h3>
+        <p>Tap the heart on any story to save it here.</p>
+      </div>
+    </div>
+
+    <!-- ADD STORY VIEW -->
+    <div id="addView" class="view">
+      <div class="view-header">
+        <h2>Share a Story</h2>
+        <p>What story would you like to share?</p>
+      </div>
+      <form class="story-form" id="storyForm" novalidate>
+        <div class="form-row">
+          <div class="form-group">
+            <label for="storyTitle">Title <span class="req">*</span></label>
+            <input type="text" id="storyTitle" placeholder="Grandma's Apple Pie" maxlength="80" />
+            <span class="field-error" id="titleError"></span>
+          </div>
+          <div class="form-group">
+            <label for="storyCategory">Category <span class="req">*</span></label>
+            <select id="storyCategory">
+              <option value="">Choose one…</option>
+              <option value="memory">Memory</option>
+              <option value="recipe">Recipe</option>
+              <option value="tradition">Tradition</option>
+              <option value="lesson">Life Lesson</option>
+            </select>
+            <span class="field-error" id="catError"></span>
+          </div>
+        </div>
+        <div class="form-row">
+          <div class="form-group">
+            <label for="storyAuthor">Your Name <span class="req">*</span></label>
+            <input type="text" id="storyAuthor" placeholder="Margaret Chen" maxlength="60" />
+            <span class="field-error" id="authorError"></span>
+          </div>
+          <div class="form-group">
+            <label for="storyRelation">Relation / Role</label>
+            <input type="text" id="storyRelation" placeholder="Grandmother, Class of '62" maxlength="60" />
+          </div>
+        </div>
+
+        <!-- Photo upload -->
+        <div class="form-group full">
+          <label>Photo <span class="label-opt">(optional)</span></label>
+          <div class="photo-upload-area" id="photoUploadArea">
+            <input type="file" id="photoInput" accept="image/*" aria-label="Upload a photo" />
+            <div class="photo-upload-placeholder" id="photoPlaceholder">
+              <svg viewBox="0 0 40 40" fill="none"><rect x="4" y="8" width="32" height="24" rx="3" stroke="currentColor" stroke-width="1.5"/><circle cx="14" cy="17" r="3" stroke="currentColor" stroke-width="1.5"/><path d="M4 28l9-8 6 6 5-4 8 6" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/></svg>
+              <span>Click to add a photo or drag and drop</span>
+              <span class="photo-hint">JPG, PNG, GIF up to 5 MB</span>
+            </div>
+            <div class="photo-preview-wrap" id="photoPreviewWrap" style="display:none">
+              <img id="photoPreview" src="" alt="Story photo preview" />
+              <button type="button" class="photo-remove-btn" id="photoRemoveBtn" aria-label="Remove photo">✕ Remove</button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Writing prompts -->
+        <div class="form-group full">
+          <label for="storyBody">Your Story <span class="req">*</span></label>
+          <div class="prompt-bar" id="promptBar">
+            <span class="prompt-bar__label">Need a nudge? Try:</span>
+            <div class="prompt-chips" id="promptChips"></div>
+          </div>
+          <textarea id="storyBody" rows="10" placeholder="Write your story here… share the details that matter most."></textarea>
+          <div class="char-count"><span id="charCount">0</span> characters</div>
+          <span class="field-error" id="bodyError"></span>
+        </div>
+
+        <div class="form-actions">
+          <button type="button" class="btn-ghost" id="cancelAdd">Cancel</button>
+          <fieldset class="story-visibility" aria-label="Story visibility">
+            <legend>Visibility</legend>
+            <label class="visibility-choice"><input type="radio" name="storyVisibility" value="public" checked /><span>Public</span></label>
+            <label class="visibility-choice"><input type="radio" name="storyVisibility" value="private" /><span>Private</span></label>
+          </fieldset>
+          <button type="submit" class="btn-primary">Publish Story</button>
+        </div>
+      </form>
+      <div class="success-toast" id="successToast">✓ Story published!</div>
+    </div>
+
+  </main>
+
+  <dialog class="family-dialog" id="familyAccessDialog" aria-labelledby="familyDialogTitle">
+    <div class="family-dialog-header">
+      <div><p class="family-dialog-kicker">Family access</p><h2 id="familyDialogTitle">Your family</h2></div>
+      <button type="button" class="family-dialog-close" id="closeFamilyDialog" aria-label="Close family access">×</button>
+    </div>
+    <p class="family-dialog-copy">Only members of this family can view private stories.</p>
+    <div class="family-member-list" id="familyMemberList"></div>
+    <div class="family-invite-box">
+      <h3>Invite a relative</h3>
+      <p>Share sign-in details with a relative to give them access. This does not send an email.</p>
+      <button type="button" class="btn-primary" id="copyRelativeLogin">Copy relative sign-in details</button>
+      <p class="family-invite-status" id="familyInviteStatus" role="status"></p>
+    </div>
+  </dialog>
+
+  <!-- PRINT TEMPLATE (hidden, used only when printing) -->
+  <div id="printArea" style="display:none"></div>
+
+  <footer class="site-footer">
+    <div class="container footer-inner">
+      <span class="logo">Generations</span>
+      <p>A home for the stories your family shares.</p>
+    </div>
+  </footer>
+
+  <script>
+    if (sessionStorage.getItem('gen_authed') !== 'true') {
+      window.location.href = 'login.html';
+    }
+    document.addEventListener('DOMContentLoaded', () => {
+      document.getElementById('signOutBtn').addEventListener('click', () => {
+        sessionStorage.removeItem('gen_authed');
+        sessionStorage.removeItem('gen_user_email');
+        sessionStorage.removeItem('gen_user_name');
+        sessionStorage.removeItem('gen_user_role');
+        sessionStorage.removeItem('gen_family_id');
+        window.location.href = 'login.html';
+      });
+    });
+  </script>
+  <script src="data.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>

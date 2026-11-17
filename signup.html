@@ -1,0 +1,137 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Create Account | Generations</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,600;1,400&family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="style.css" />
+  <link rel="stylesheet" href="auth.css" />
+</head>
+<body class="auth-page">
+
+  <div class="auth-shell">
+
+    <!-- Left panel -->
+    <div class="auth-panel auth-panel--left">
+      <a href="login.html" class="auth-logo">
+        <svg class="logo-leaf" viewBox="0 0 24 24" fill="none">
+          <path d="M12 2C6 2 2 8 2 14c0 4.4 3.6 8 8 8 1.4 0 2.8-.4 4-1 1.2.6 2.6 1 4 1 4.4 0 8-3.6 8-8 0-6-4-12-10-12z" fill="currentColor" opacity="0.25"/>
+          <path d="M12 2c0 0-2 6-2 10s2 10 2 10M12 2c0 0 2 6 2 10s-2 10-2 10" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+        </svg>
+        Generations
+      </a>
+      <div class="auth-panel__quote">
+        <blockquote>"Start with one story."</blockquote>
+        <p class="auth-panel__sub">Add a recipe, a memory, or a tradition your family should know.</p>
+      </div>
+    </div>
+
+    <!-- Right panel / form -->
+    <div class="auth-panel auth-panel--right">
+      <div class="auth-card">
+
+        <!-- Default: signup form -->
+        <div id="signupFormWrap">
+          <div class="auth-card__header">
+            <h1>Create your account</h1>
+            <p>Your family’s stories start here.</p>
+          </div>
+
+          <form id="signupForm" class="auth-form" novalidate>
+            <div class="form-row">
+              <div class="form-group">
+                <label for="signupFirst">First name <span class="req">*</span></label>
+                <input type="text" id="signupFirst" placeholder="Margaret" maxlength="40" autocomplete="given-name" />
+                <span class="field-error" id="firstError"></span>
+              </div>
+              <div class="form-group">
+                <label for="signupLast">Last name <span class="req">*</span></label>
+                <input type="text" id="signupLast" placeholder="Chen" maxlength="40" autocomplete="family-name" />
+                <span class="field-error" id="lastError"></span>
+              </div>
+            </div>
+            <div class="form-group">
+              <label for="signupEmail">Email address <span class="req">*</span></label>
+              <input type="email" id="signupEmail" placeholder="you@example.com" autocomplete="email" />
+              <span class="field-error" id="signupEmailError"></span>
+            </div>
+            <div class="form-group">
+              <label for="signupPassword">
+                Password <span class="req">*</span>
+                <button type="button" class="toggle-pw" id="toggleSignupPw" tabindex="-1">Show</button>
+              </label>
+              <input type="password" id="signupPassword" placeholder="••••••••" autocomplete="new-password" />
+              <span class="field-hint">At least 6 characters.</span>
+              <span class="field-error" id="signupPwError"></span>
+            </div>
+
+            <button type="submit" class="btn-primary btn-full">Create Account</button>
+          </form>
+
+          <p class="auth-switch">
+            Already have an account? <a href="login.html">Sign in</a>
+          </p>
+        </div>
+
+        <!-- Success state (shown after submit) -->
+        <div id="signupSuccess" style="display:none" class="auth-success">
+          <div class="success-icon">✓</div>
+          <h2>You're all set!</h2>
+          <p>Since this is a prototype, use the active account to sign in:</p>
+          <div class="creds-box">
+            <div><span>Email</span><strong>pm@iastate.edu</strong></div>
+            <div><span>Password</span><strong>PM123</strong></div>
+          </div>
+          <a href="login.html" class="btn-primary btn-full">Go to Sign In</a>
+        </div>
+
+      </div>
+    </div>
+
+  </div>
+
+  <script>
+    // Redirect if already logged in
+    if (sessionStorage.getItem('gen_authed') === 'true') {
+      window.location.href = 'index.html';
+    }
+
+    const form          = document.getElementById('signupForm');
+    const togglePwBtn   = document.getElementById('toggleSignupPw');
+    const passwordInput = document.getElementById('signupPassword');
+
+    togglePwBtn.addEventListener('click', () => {
+      const isText = passwordInput.type === 'text';
+      passwordInput.type = isText ? 'password' : 'text';
+      togglePwBtn.textContent = isText ? 'Show' : 'Hide';
+    });
+
+    form.addEventListener('submit', (e) => {
+      e.preventDefault();
+      // Clear errors
+      ['firstError','lastError','signupEmailError','signupPwError'].forEach(id => {
+        document.getElementById(id).textContent = '';
+      });
+
+      const first    = document.getElementById('signupFirst').value.trim();
+      const last     = document.getElementById('signupLast').value.trim();
+      const email    = document.getElementById('signupEmail').value.trim();
+      const password = document.getElementById('signupPassword').value;
+      let valid = true;
+
+      if (!first)                { document.getElementById('firstError').textContent        = 'Required.'; valid = false; }
+      if (!last)                 { document.getElementById('lastError').textContent         = 'Required.'; valid = false; }
+      if (!email || !email.includes('@')) { document.getElementById('signupEmailError').textContent = 'Enter a valid email.'; valid = false; }
+      if (!password || password.length < 6) { document.getElementById('signupPwError').textContent = 'At least 6 characters required.'; valid = false; }
+      if (!valid) return;
+
+      // Show success panel (prototype with no saved account)
+      document.getElementById('signupFormWrap').style.display = 'none';
+      document.getElementById('signupSuccess').style.display  = '';
+    });
+  </script>
+</body>
+</html>
