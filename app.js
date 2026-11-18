@@ -15,6 +15,8 @@
   const LS_FAVORITES    = 'gen_favorites';
   const LS_REACTIONS    = 'gen_reactions';
   const LS_TEXT_SIZE    = 'gen_text_size';
+  const LS_STORY_OVERRIDES = 'gen_story_overrides';
+  const LS_DELETED_STORIES = 'gen_deleted_stories';
 
   function getCurrentFamilyId() {
     return sessionStorage.getItem('gen_family_id') || 'reed-family';
@@ -42,6 +44,21 @@
     const familyId = getCurrentFamilyId();
     const stories = arr.map(story => ({ ...story, familyId, isPrivate: story.isPrivate !== false }));
     localStorage.setItem(familyStorageKey(LS_USER_STORIES), JSON.stringify(stories));
+  }
+
+  function getStoryOverrides() {
+    try { return JSON.parse(localStorage.getItem(familyStorageKey(LS_STORY_OVERRIDES)) || '{}'); }
+    catch { return {}; }
+  }
+  function saveStoryOverrides(overrides) {
+    localStorage.setItem(familyStorageKey(LS_STORY_OVERRIDES), JSON.stringify(overrides));
+  }
+  function getDeletedStoryIds() {
+    try { return JSON.parse(localStorage.getItem(familyStorageKey(LS_DELETED_STORIES)) || '[]'); }
+    catch { return []; }
+  }
+  function saveDeletedStoryIds(ids) {
+    localStorage.setItem(familyStorageKey(LS_DELETED_STORIES), JSON.stringify(ids));
   }
 
   function getPublicUserStories() {
@@ -91,7 +108,11 @@
     const userStories = getUserStories();
     const publicStories = getPublicUserStories();
     const privateUserStories = userStories.filter(story => story.isPrivate !== false);
-    return [...SAMPLE_STORIES, ...privateSamples, ...publicStories, ...privateUserStories];
+    const overrides = getStoryOverrides();
+    const deletedIds = new Set(getDeletedStoryIds());
+    return [...SAMPLE_STORIES, ...privateSamples, ...publicStories, ...privateUserStories]
+      .map(story => overrides[story.id] ? { ...story, ...overrides[story.id] } : story)
+      .filter(story => !deletedIds.has(story.id));
   }
 
   /* ─────────────────────────────────────────────
@@ -101,6 +122,7 @@
   let activeCategory = 'all';
   let searchQuery    = '';
   let currentStoryId = null;
+  let editingStoryId = null;
   let photoDataUrl   = null;   // base64 for the current add-form photo
   let speechUtterance = null;  // current TTS utterance
   let isSpeaking     = false;
@@ -129,6 +151,8 @@
   const backBtn        = document.getElementById('backBtn');
   const storyDetail    = document.getElementById('storyDetail');
   const storyForm      = document.getElementById('storyForm');
+  const storyFormHeading = document.querySelector('#addView .view-header h2');
+  const submitStoryBtn = storyForm.querySelector('button[type="submit"]');
   const successToast   = document.getElementById('successToast');
   const cancelAddBtn   = document.getElementById('cancelAdd');
   const storyBodyTA    = document.getElementById('storyBody');
@@ -459,6 +483,62 @@
   /* ─────────────────────────────────────────────
      STORY DETAIL
   ───────────────────────────────────────────── */
+  function canManageStory(story) {
+    const isUserStory = getUserStories().some(userStory => userStory.id === story.id);
+    const isSampleStory = SAMPLE_STORIES.some(sample => sample.id === story.id);
+    const isFamilySample = (window.FAMILY_PRIVATE_STORIES || []).some(sample => sample.id === story.id && sample.familyId === getCurrentFamilyId());
+    return isUserStory || isSampleStory || isFamilySample;
+  }
+
+  function beginStoryEdit(id) {
+    const story = getAllStories().find(item => item.id === id);
+    if (!story || !canManageStory(story)) return;
+    editingStoryId = story.id;
+    document.getElementById('storyTitle').value = story.title;
+    document.getElementById('storyCategory').value = story.category;
+    document.getElementById('storyAuthor').value = story.author;
+    document.getElementById('storyRelation').value = story.relation || '';
+    storyBodyTA.value = story.body;
+    document.querySelector('input[name="storyVisibility"][value="' + (story.isPrivate ? 'private' : 'public') + '"]').checked = true;
+    charCount.textContent = story.body.length.toLocaleString();
+    clearPhoto();
+    if (story.photo) showPhotoPreview(story.photo);
+    storyFormHeading.textContent = 'Edit Story';
+    submitStoryBtn.textContent = 'Save Changes';
+    successToast.textContent = '✓ Story updated!';
+    ['titleError','catError','authorError','bodyError'].forEach(errorId => { document.getElementById(errorId).textContent = ''; });
+    updatePrompts(story.category);
+    showView('add');
+  }
+
+  function resetStoryForm() {
+    storyForm.reset();
+    editingStoryId = null;
+    charCount.textContent = '0';
+    clearPhoto();
+    storyFormHeading.textContent = 'Share a Story';
+    submitStoryBtn.textContent = 'Publish Story';
+    successToast.textContent = '✓ Story published!';
+    ['titleError','catError','authorError','bodyError'].forEach(errorId => { document.getElementById(errorId).textContent = ''; });
+    updatePrompts('default');
+  }
+
+  function deleteStory(id) {
+    const stories = getUserStories();
+    const story = getAllStories().find(item => item.id === id);
+    if (!story || !canManageStory(story)) return;
+    if (!window.confirm('Delete this story? This cannot be undone.')) return;
+    if (stories.some(item => item.id === id)) saveUserStories(stories.filter(item => item.id !== id));
+    else saveDeletedStoryIds([...new Set([...getDeletedStoryIds(), id])]);
+    saveFavorites(getFavorites().filter(favoriteId => favoriteId !== id));
+    const reactions = getReactions();
+    delete reactions[id];
+    saveReactions(reactions);
+    currentStoryId = null;
+    showView('browse');
+    renderBrowse();
+  }
+
   function openStory(id) {
     currentStoryId = id;
     stopSpeech();
@@ -510,6 +590,7 @@
       <div class="detail-divider"></div>
       ${photoHtml}
       <div class="detail-body" id="detailBodyText">${renderBodyHtml(story.body)}</div>
+      ${canManageStory(story) ? `<div class="story-owner-actions"><button type="button" class="btn-ghost" id="editStoryBtn">Edit story</button><button type="button" class="btn-ghost story-delete-btn" id="deleteStoryBtn">Delete story</button></div>` : ''}
       ${reactionsHtml}
     `;
 
@@ -517,6 +598,10 @@
       toggleFav(story.id);
       renderStoryDetail(story.id);
     });
+    const editStoryBtn = document.getElementById('editStoryBtn');
+    if (editStoryBtn) editStoryBtn.addEventListener('click', () => beginStoryEdit(story.id));
+    const deleteStoryBtn = document.getElementById('deleteStoryBtn');
+    if (deleteStoryBtn) deleteStoryBtn.addEventListener('click', () => deleteStory(story.id));
 
     storyDetail.querySelectorAll('.reaction-btn--detail').forEach(btn => {
       btn.addEventListener('click', () => {
@@ -626,34 +711,51 @@
     if (!validateForm()) return;
 
     const bodyText = storyBodyTA.value.trim();
-    const newStory = {
-      id:       'u_' + Date.now(),
+    const stories = getUserStories();
+    const existingIndex = editingStoryId ? stories.findIndex(story => story.id === editingStoryId) : -1;
+    const originalStory = editingStoryId ? getAllStories().find(story => story.id === editingStoryId) : null;
+    const existingStory = existingIndex >= 0 ? stories[existingIndex] : originalStory;
+    const savedStory = {
+      ...(existingStory || {}),
+      id:       existingStory ? existingStory.id : 'u_' + Date.now(),
       familyId: getCurrentFamilyId(),
       isPrivate: document.querySelector('input[name="storyVisibility"]:checked').value === 'private',
       title:    document.getElementById('storyTitle').value.trim(),
       category: document.getElementById('storyCategory').value,
       author:   document.getElementById('storyAuthor').value.trim(),
       relation: document.getElementById('storyRelation').value.trim(),
-      date:     new Date().toLocaleDateString('en-US', { month: 'long', year: 'numeric' }),
+      date:     existingStory?.date || new Date().toLocaleDateString('en-US', { month: 'long', year: 'numeric' }),
       body:     bodyText,
       excerpt:  bodyText.slice(0, 140) + (bodyText.length > 140 ? '…' : ''),
       photo:    photoDataUrl || null,
     };
+    const wasEditing = Boolean(existingStory);
 
-    const stories = getUserStories();
-    stories.unshift(newStory);
-    saveUserStories(stories);
+    if (existingStory) stories[existingIndex] = savedStory;
+    else stories.unshift(savedStory);
+    if (existingStory && existingIndex < 0) {
+      const overrides = getStoryOverrides();
+      overrides[savedStory.id] = savedStory;
+      saveStoryOverrides(overrides);
+    } else saveUserStories(stories);
 
-    // Reset
-    storyForm.reset();
-    charCount.textContent = '0';
-    clearPhoto();
-    updatePrompts('default');
-
+    const savedStoryId = savedStory.id;
+    const toastMessage = wasEditing ? '✓ Story updated!' : '✓ Story published!';
+    resetStoryForm();
+    successToast.textContent = toastMessage;
     successToast.classList.add('show');
-    setTimeout(() => successToast.classList.remove('show'), 2800);
+    setTimeout(() => {
+      successToast.classList.remove('show');
+      successToast.textContent = '✓ Story published!';
+    }, 2800);
 
     setTimeout(() => {
+      if (wasEditing) {
+        currentStoryId = savedStoryId;
+        renderStoryDetail(savedStoryId);
+        showView('story');
+        return;
+      }
       activeCategory = 'all';
       searchQuery = '';
       searchInput.value = '';
@@ -664,7 +766,15 @@
     }, 600);
   });
 
-  cancelAddBtn.addEventListener('click', () => showView('browse'));
+  cancelAddBtn.addEventListener('click', () => {
+    const returnToStoryId = editingStoryId;
+    resetStoryForm();
+    if (returnToStoryId) {
+      currentStoryId = returnToStoryId;
+      renderStoryDetail(returnToStoryId);
+      showView('story');
+    } else showView('browse');
+  });
 
   /* ─────────────────────────────────────────────
      FILTER CHIPS
@@ -714,6 +824,7 @@
         renderBrowse();
       }
       if (view === 'favorites') renderFavorites();
+      if (view === 'add') resetStoryForm();
       showView(view);
     });
   });
@@ -741,7 +852,7 @@
     familyInviteStatus.textContent = relative ? '' : 'No invited-relative account is set up for this family.';
   }
 
-  familyAccessBtn.addEventListener('click', () => {
+  if (familyAccessBtn) familyAccessBtn.addEventListener('click', () => {
     renderFamilyAccess();
     familyAccessDialog.showModal();
   });
