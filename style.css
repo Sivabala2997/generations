@@ -981,3 +981,8 @@ body.ts-xlarge .detail-body  { font-size: 1.3rem;  line-height: 2.1; }
   .form-actions { flex-wrap: wrap; }
   .story-visibility { order: 3; margin: 4px 0 0; }
 }
+
+/* Story owner actions */
+.story-owner-actions { display: flex; gap: 10px; margin-top: 24px; }
+.story-delete-btn { color: #a34e4e; }
+.story-delete-btn:hover { color: #873b3b; background: #fbeeee; }
